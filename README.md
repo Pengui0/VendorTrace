@@ -105,28 +105,6 @@ flowchart TD
 - **Monitoring & Diff Engine**: Re-running an investigation compares the current run against the historical baseline, detecting `NEW`, `CHANGED`, and `RESOLVED` signals.
 - **Audit History**: Vendor profile tracks longitudinal posture and trend (`IMPROVING`, `DETERIORATING`, `STABLE`).
 
----
-
-## 6.5-Hour Hackathon MVP Alignment
-
-VendorTrace was engineered to satisfy the strict hackathon MVP criteria:
-
-| Phase | Duration | Scope Delivered | Status |
-|---|---|---|---|
-| **0:00–0:30** | 30m | App shell, topbar, provider readiness check, SSRF defenses | Complete |
-| **0:30–1:15** | 45m | IndiaCos identity resolution, identifier detection (CIN/GSTIN/PAN/DIN) | Complete |
-| **1:15–2:15** | 60m | TinyFish streaming SSE adapter, live browser view fallback | Complete |
-| **2:15–3:15** | 60m | Layer 1 parallel 4-dimension discovery with failure isolation | Complete |
-| **3:15–4:00** | 45m | Layer 3 cross-validation rules and deterministic risk scoring | Complete |
-| **4:00–4:45** | 45m | Layer 2 entity tracing with DIN and shared address anchors | Complete |
-| **4:45–5:30** | 45m | Report UI, `@xyflow/react` entity graph, evidence drawer | Complete |
-| **5:30–6:00** | 30m | Change detection diff engine and deterministic synthetic demo mode | Complete |
-| **6:00–6:30** | 30m | PDF/CSV exports, multi-attribute filter, and test hardening | Complete |
-
-**Minimal Demonstrable Path (automated code tests recorded; live/browser smoke test still required):**
-$$\text{Input Vendor} \longrightarrow \text{Resolve Identity} \longrightarrow \text{Parallel 4-D Discovery} \longrightarrow \text{Evidence Report} \longrightarrow \text{Entity Graph} \longrightarrow \text{Human Review Flag} \longrightarrow \text{Rerun Diff}$$
-
----
 
 ## Deterministic Demo Mode
 
