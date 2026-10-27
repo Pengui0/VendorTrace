@@ -1,0 +1,183 @@
+/**
+ * Contract tests for live IndiaCos provider adapters.
+ * Uses mocked HTTP responses only; does not call or claim a live upstream API.
+ */
+import { LiveIndiaCosProvider } from '../providers/indiacos.js';
+import { registryCache } from '../providers/cache.js';
+import { EntityTracingService } from '../services/entityTracingService.js';
+
+interface TestResult {
+  assertionsPassed: number;
+  assertionsFailed: number;
+  logs: string[];
+}
+
+export async function runLiveProviderContractTests(): Promise<TestResult> {
+  const logs: string[] = [];
+  let passed = 0;
+  let failed = 0;
+  const assert = (condition: boolean, message: string) => {
+    if (!condition) {
+      failed++;
+      logs.push(`[FAIL] ${message}`);
+      throw new Error(message);
+    }
+    passed++;
+    logs.push(`[PASS] ${message}`);
+  };
+
+  const oldKey = process.env.INDIACOS_API_KEY;
+  const oldBaseUrl = process.env.INDIACOS_BASE_URL;
+  const oldFetch = globalThis.fetch;
+  const called: string[] = [];
+
+  try {
+    process.env.INDIACOS_API_KEY = 'vendortrace-test-only-key';
+    process.env.INDIACOS_BASE_URL = 'https://indiacos.test/api/v1';
+    registryCache.clear();
+
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = new URL(String(input));
+      called.push(`${init?.method || 'GET'} ${url.pathname}${url.search}`);
+      if (init?.headers) {
+        const headers = new Headers(init.headers);
+        assert(headers.get('authorization') === 'Bearer vendortrace-test-only-key', 'IndiaCos request includes server-side bearer authentication');
+        assert(headers.get('x-api-key') === 'vendortrace-test-only-key', 'IndiaCos request includes documented API-key header');
+      }
+
+      if (url.pathname === '/api/v1/company/UTESTCIN0000000000001') {
+        return new Response(JSON.stringify({
+          cin: 'UTESTCIN0000000000001',
+          kind: 'company',
+          name: 'Test Manufacturing Private Limited',
+          status: 'Active',
+          gstins: [{ gstin: '27AAACW1234F1Z5' }, { registration_number: '29AAACW1234F1Z3' }, { gstin: 'not-a-gstin' }],
+          registered_office: { address_line: '101 Test Road', city: 'Mumbai', state: 'Maharashtra' },
+          directors: { count: 1, url: 'https://indiacos.test/api/v1/company/UTESTCIN0000000000001/directors' },
+        }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      if (url.pathname === '/api/v1/company/UTESTCIN0000000000001/directors') {
+        return new Response(JSON.stringify({ results: [{ din: '00001234', name: 'Fictional Director', designation: 'Director', appointed: '2022-01-01' }] }), {
+          status: 200, headers: { 'content-type': 'application/json' },
+        });
+      }
+      if (url.pathname === '/api/v1/company/UTESTCIN0000000000001/cases') {
+        return new Response(JSON.stringify({
+          respondent: { total: 2, pending: 1 }, petitioner: { total: 0 }, flags: { recovery: 1 },
+          recent: [{ case_id: 'ecourts-001', case_number: 'CS 42/2024', court: 'Delhi High Court', petitioner: 'Tata Steel Limited', respondent: 'Example Vendor', status: 'pending', date: '2024-02-12', source_url: 'https://court.example/case/001' }],
+        }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      if (url.pathname === '/api/v1/company/UTESTCIN0000000000002/cases') {
+        return new Response(JSON.stringify({ recent: [{}] }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      if (url.pathname === '/api/v1/gst/27AAACW1234F1Z5/cases') {
+        return new Response(JSON.stringify({ gstin: '27AAACW1234F1Z5', respondent: { total: 0 }, petitioner: { total: 1 }, recent: [] }), {
+          status: 200, headers: { 'content-type': 'application/json' },
+        });
+      }
+      if (url.pathname === '/api/v1/director/00001234') {
+        return new Response(JSON.stringify({
+          din: '00001234', name: 'Fictional Director', disqualified: false,
+          directorships: [
+            { cin: 'UOTHERCOMPANY00000000001', company: 'Record Linked Company Limited', designation: 'Director', appointed: '2023-02-01', din_linked_by: 'record', url: 'https://indiacos.test/company/UOTHERCOMPANY00000000001' },
+            { cin: 'UWEAKMATCH0000000000001', company: 'Name Match Candidate Limited', din_linked_by: 'name_match' },
+            { company: 'Incomplete Row Without Identifier', din_linked_by: 'record' },
+          ],
+        }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      if (url.pathname === '/api/v1/search' && url.searchParams.get('type') === 'address') {
+        return new Response(JSON.stringify({ results: [{ type: 'address', id: 314, address: '101 Test Road, Mumbai' }] }), {
+          status: 200, headers: { 'content-type': 'application/json' },
+        });
+      }
+      if (url.pathname === '/api/v1/office/314') {
+        return new Response(JSON.stringify({
+          id: 314,
+          address: '101 Test Road, Mumbai',
+          url: 'https://indiacos.test/office/314',
+          results: [
+            { type: 'company', cin: 'UADDRESSMATCH0000000001', name: 'Address Linked Company Limited', status: 'Active', url: 'https://indiacos.test/company/UADDRESSMATCH0000000001' },
+            { type: 'gst', gstin: '27AAAAA0000A1Z5', name: 'GST-only record' },
+            { type: 'company', name: 'Company Missing CIN' },
+          ],
+        }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({ error: `Unexpected test URL: ${url.pathname}` }), {
+        status: 404, headers: { 'content-type': 'application/json' },
+      });
+    }) as typeof fetch;
+
+    const provider = new LiveIndiaCosProvider();
+    const company = await provider.lookupByCIN('UTESTCIN0000000000001');
+    assert(company.success && company.profile?.cin === 'UTESTCIN0000000000001', 'CIN lookup returns a canonical company profile');
+    assert(company.profile?.directors?.length === 1 && company.profile.directors[0].din === '00001234', 'CIN lookup fetches director rows from the separate directors endpoint');
+    assert(called.some((call) => call.includes('/company/UTESTCIN0000000000001/directors')), 'CIN lookup requests the documented directors endpoint when count is nonzero');
+    assert(company.profile?.registeredOffice?.includes('Mumbai') === true, 'Object-shaped registered office is normalized to readable text');
+    assert(company.profile?.gstins.join(',') === '27AAACW1234F1Z5,29AAACW1234F1Z3', 'CIN lookup exposes deduplicated valid GSTINs from IndiaCos registration arrays');
+
+    const companyCases = await provider.lookupCases('UTESTCIN0000000000001', { identifierType: 'CIN' });
+    assert(companyCases.cases[0]?.caseId === 'ecourts-001' && companyCases.cases[0]?.caseNumber === 'CS 42/2024', 'IndiaCos company case response preserves the provider case ID and number');
+    assert(companyCases.cases[0]?.courtName === 'Delhi High Court' && companyCases.cases[0]?.petitioner === 'Tata Steel Limited' && companyCases.cases[0]?.respondent === 'Example Vendor', 'IndiaCos case response preserves court and parties');
+    assert(companyCases.cases[0]?.caseDate === '2024-02-12' && companyCases.cases[0]?.sourceUrl === 'https://court.example/case/001', 'IndiaCos case response preserves its date and source URL');
+    assert(companyCases.summary?.respondentTotal === 2 && companyCases.summary.respondentPending === 1, 'IndiaCos aggregate case counts are preserved separately from case records');
+    const sparseCases = await provider.lookupCases('UTESTCIN0000000000002', { identifierType: 'CIN' });
+    assert(sparseCases.cases[0]?.caseTitle === undefined && sparseCases.cases[0]?.snippet === undefined && sparseCases.cases[0]?.sourceUrl === undefined && sparseCases.cases[0]?.lastUpdated === undefined, 'Missing IndiaCos case fields remain missing instead of receiving generic or invented values');
+    const gstCases = await provider.lookupCases('27AAACW1234F1Z5', { identifierType: 'GSTIN' });
+    assert(gstCases.success && gstCases.summary?.petitionerTotal === 1, 'IndiaCos GST case endpoint and aggregate response are supported');
+
+    const director = await provider.lookupByDIN('00001234');
+    assert(director.success && director.profile?.companyStatus === 'UNKNOWN', 'Director result is not incorrectly classified as an active company');
+    assert(director.profile?.associatedCompanies?.length === 2, 'Director response only retains directorship rows with both company name and CIN');
+    assert(director.profile?.associatedCompanies?.some((item) => item.linkageMethod === 'record') === true, 'Registry-record directorship linkage remains distinguishable');
+    assert(director.profile?.associatedCompanies?.some((item) => item.linkageMethod === 'name_match') === true, 'Name-match linkage remains distinguishable and is not silently upgraded');
+    assert(director.profile?.associatedCompanies?.find((item) => item.linkageMethod === 'record')?.sourceUrl?.includes('UOTHERCOMPANY') === true, 'Related-company source URL is preserved when provided by the API');
+
+    const address = await provider.searchBusinessesAtAddress('101 Test Road, Mumbai');
+    assert(address.candidates.length === 1, 'Address lookup only retains corporate candidates with a CIN and name');
+    assert(address.candidates[0].identifierValue === 'UADDRESSMATCH0000000001', 'Address candidate preserves the exact CIN');
+    assert(address.candidates[0].ambiguityNote?.includes('does not prove') === true, 'Address result explicitly disclaims guilt by association');
+    assert(address.sourceUrl?.includes('/office/314') === true, 'Address lookup retains its source office endpoint');
+    assert(called.some((call) => call.includes('/search?') && call.includes('type=address')), 'Address discovery uses the documented search endpoint with address mode');
+    assert(called.some((call) => call.includes('/office/314')), 'Address discovery follows up through the identified office endpoint');
+
+    // Exercise Layer 2 with the same mocked API contract, including confidence handling.
+    const tracingService = new EntityTracingService();
+    const traced = await tracingService.traceRelatedEntities({
+      id: 'vendor_primary_test',
+      canonicalName: 'Test Manufacturing Private Limited',
+      cin: 'UTESTCIN0000000000001',
+      profile: {
+        canonicalName: 'Test Manufacturing Private Limited',
+        cin: 'UTESTCIN0000000000001',
+        gstins: [],
+        companyStatus: 'ACTIVE',
+        entityType: 'COMPANY',
+        registeredOffice: '101 Test Road, Mumbai',
+        directors: [{ din: '00001234', name: 'Fictional Director' }],
+        lastFetchedAt: new Date().toISOString(),
+        identityMatchMethod: 'EXACT_CIN',
+        isCached: false,
+      },
+    });
+    const recordLink = traced.relationships.find((rel) => rel.matchMethod === 'EXACT_DIN_RECORD_LINK');
+    const nameMatch = traced.relationships.find((rel) => rel.matchMethod === 'NAME_MATCH_FROM_DIRECTOR_RESULTS');
+    const addressMatch = traced.relationships.find((rel) => rel.relationshipType === 'SHARED_ADDRESS');
+    assert(Boolean(recordLink && recordLink.strength === 'strong_identifier'), 'Layer 2 keeps a provider-designated registry-record DIN link as a strong match');
+    assert(Boolean(nameMatch && nameMatch.strength === 'same_name_candidate'), 'Layer 2 downgrades provider-designated name-match directorship to a candidate');
+    assert(Boolean(addressMatch && addressMatch.strength === 'same_address_candidate'), 'Layer 2 adds shared-address discovery as a candidate relationship');
+    assert(traced.relationships.every((rel) => rel.lightweightL1Status === 'UNKNOWN'), 'New related entities remain UNKNOWN until their own risk scan is run');
+    assert(traced.relationships.every((rel) => rel.sourceUrls.length > 0), 'Each discovered live relationship retains provider-source provenance');
+
+    return { assertionsPassed: passed, assertionsFailed: failed, logs };
+  } catch (error) {
+    logs.push(`[ERROR] ${error instanceof Error ? error.message : String(error)}`);
+    return { assertionsPassed: passed, assertionsFailed: Math.max(1, failed), logs };
+  } finally {
+    globalThis.fetch = oldFetch;
+    if (oldKey === undefined) delete process.env.INDIACOS_API_KEY;
+    else process.env.INDIACOS_API_KEY = oldKey;
+    if (oldBaseUrl === undefined) delete process.env.INDIACOS_BASE_URL;
+    else process.env.INDIACOS_BASE_URL = oldBaseUrl;
+    registryCache.clear();
+  }
+}

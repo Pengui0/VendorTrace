@@ -1,0 +1,6 @@
+{
+  "name": "VendorTrace",
+  "description": "Evidence-backed vendor due diligence and entity tracing for Indian enterprise procurement and compliance teams.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

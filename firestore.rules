@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function: verifies user is authenticated
+    function isAuthenticated() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    // Helper function: verifies user belongs to the target workspace
+    function isWorkspaceMember(workspaceId) {
+      return isAuthenticated() && (
+        request.auth.token.workspace_id == workspaceId ||
+        request.auth.token.workspaces.hasAny([workspaceId])
+      );
+    }
+
+    // Workspaces collection
+    match /workspaces/{workspaceId} {
+      allow read: if isWorkspaceMember(workspaceId);
+      allow write: if isWorkspaceMember(workspaceId) && request.auth.token.role == 'ADMIN';
+
+      // Vendor profiles subcollection
+      match /vendors/{vendorId} {
+        allow read: if isWorkspaceMember(workspaceId);
+        allow create, update: if isWorkspaceMember(workspaceId);
+        allow delete: if isWorkspaceMember(workspaceId) && request.auth.token.role == 'ADMIN';
+      }
+
+      // Due diligence investigations subcollection
+      match /investigations/{investigationId} {
+        allow read: if isWorkspaceMember(workspaceId);
+        allow create, update: if isWorkspaceMember(workspaceId);
+        allow delete: if isWorkspaceMember(workspaceId) && request.auth.token.role == 'ADMIN';
+      }
+
+      // Evidence & Signal chains
+      match /signals/{signalId} {
+        allow read: if isWorkspaceMember(workspaceId);
+        allow write: if isWorkspaceMember(workspaceId);
+      }
+
+      // Audit logs (immutable append-only by system)
+      match /audit_logs/{logId} {
+        allow read: if isWorkspaceMember(workspaceId) && (request.auth.token.role == 'AUDITOR' || request.auth.token.role == 'ADMIN');
+        allow create: if isWorkspaceMember(workspaceId);
+        allow update, delete: if false; // Immutable audit ledger
+      }
+    }
+
+    // Default deny for all unspecified collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
