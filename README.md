@@ -158,7 +158,7 @@ VendorTrace keeps all credentials strictly server-side. **No API keys or auth he
 | Variable Name | Required | Description |
 |---|---|---|
 | `GEMINI_API_KEY` | Recommended | Powers deterministic evidence summaries and brief compliance briefs. |
-| `TINYFISH_API_KEY` | Optional in Demo | Required for live web crawling, litigation dockets, and SSE streaming. |
+| `TINYFISH_API_KEY` | Required | Required for live web crawling, litigation dockets, and SSE streaming. |
 | `INDIACOS_API_KEY` | Optional in Demo | Required for live MCA21 master data and Director DIN lookups. |
 | `VENDORTRACE_INVESTIGATION_TIMEOUT_MS` | Optional | Overall live investigation deadline in milliseconds (default and maximum: `120000`). |
 | `VENDORTRACE_AGENT_TIMEOUT_MS` | Optional | Per-agent deadline in milliseconds (default: `45000`, maximum: `120000`). |
@@ -253,52 +253,6 @@ gcloud run deploy vendortrace \
   --set-secrets TINYFISH_API_KEY=TINYFISH_API_KEY:latest \
   --set-secrets INDIACOS_API_KEY=INDIACOS_API_KEY:latest
 ```
-
----
-
-## 6-Step Hackathon Pitch & Demo Script
-
-When presenting VendorTrace to judges or stakeholders, follow this battle-tested 3-minute sequence:
-
-### Step 1: Establish Problem & Launch Guided Walkthrough (0:00–0:30)
-- Navigate to the **Guided Demo** tab.
-- Highlight the persistent `DEMO DATA — SYNTHETIC EXAMPLE` banner.
-- Point out the fictional vendor: `Acme Horizon Technologies Pvt Ltd`.
-- Click **"Run Investigation"**.
-
-### Step 2: Live Parallel Discovery & Failure Isolation (0:30–1:00)
-- Show the 4 parallel workstream cards updating in real time.
-- Point out the elapsed timers (e.g. 410ms, 520ms) and source attributions.
-- Note that if an external court registry experiences latency, other checks finish without hanging.
-
-### Step 3: Explainable Risk Score Breakdown (1:00–1:30)
-- Open the completed synthetic report. The current fixture starts at **`48 / 100` (Review Recommended)**.
-- Expand the score breakdown:
-  - Severity points: 20
-  - Confidence points: 12
-  - Recency points: 8
-  - Identity match points: 8
-- Point out the Gemini summary: note how every claim explicitly cites evidence identifiers (`[evi_demo_crt_claim]`).
-- Contrast this with black-box LLMs that hallucinate guilt without proof.
-
-### Step 4: Interactive Entity Network Tracing (1:30–2:00)
-- Scroll to the `@xyflow/react` Network Graph.
-- Click on the node for `Horizon Logistics Hub Pvt Ltd`.
-- Explain: *"This company shares the registered office address in Bandra Kurla Complex. It is labeled as an unverified candidate with a dashed gray line—because sharing an address is a lead for inquiry, not evidence of wrongdoing."*
-
-### Step 5: Human Review Queue & Audit Export (2:00–2:30)
-- Inspect the **Requires Review** drawer.
-- Show the single-source customer grievance from a consumer forum. Explain why it is tagged `single_source_review` and kept separate from corroborated findings.
-- Click **"Export PDF Report"** and **"Export CSV Evidence Register"** to demonstrate audit-ready compliance artifacts.
-
-### Step 6: Re-run & Change Detection Diff (2:30–3:00)
-- Click **"Re-run Investigation & Compare Baseline"**.
-- The Diff Engine displays:
-  - The second synthetic run adds one distinct disposed-arbitration fixture with two synthetic sources.
-  - The pending contested recovery case and single-source grievance remain present for review; the new fixture does not resolve either matter.
-- Conclude: *"VendorTrace transforms vendor diligence from static, one-time paperwork into continuous, evidence-backed intelligence."*
-
----
 
 <div align="center">
   <sub>Built with rigor for Indian Procurement & Compliance Officers.</sub>
