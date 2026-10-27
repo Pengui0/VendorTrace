@@ -71,7 +71,7 @@ flowchart TD
     
     L3_Rules --> L4[Layer 4: Network Graph & Monitoring]
     subgraph L4_UI [Delivery & Monitoring]
-      N1[@xyflow/react Interactive Entity Graph]
+      N1["@xyflow/react Interactive Entity Graph"]
       N2[Change Detection Diff: New / Changed / Resolved]
       N3[PDF & CSV RFC 4180 Evidence Registers]
     end
