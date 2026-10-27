@@ -349,7 +349,7 @@ export const InvestigationSummary: React.FC<InvestigationSummaryProps> = ({
               Executive Diligence Summary (With Evidence Citations)
             </span>
             <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#FAF8F5] border border-[#EAE6DF] text-[#5F6572]">
-              {assessment.briefSummary.generatedBy === 'GEMINI_ASSISTED' ? 'AI-Assisted Citation Summary' : 'Deterministic Rule Summary'}
+              {assessment.briefSummary.generatedBy === 'GEMINI_ASSISTED' ? 'Citation Summary' : 'Deterministic Rule Summary'}
             </span>
           </div>
 
