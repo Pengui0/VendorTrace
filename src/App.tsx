@@ -25,8 +25,9 @@ import { getInvestigationIdentityKey, keepLatestInvestigationPerIdentity } from 
 import { LiveEvidenceView } from './components/investigations/LiveEvidenceView.js';
 import { openCustomVendorSearch } from './components/overview/customVendorSearch.js';
 import { getStorageReadError, loadWorkspace, updateWorkspace, WorkspaceSnapshot } from './persistence/localStore.js';
+import { LandingPage } from './components/landing/LandingPage.js';
 
-export default function App() {
+function DashboardApp() {
   const [savedWorkspace] = useState<WorkspaceSnapshot>(() => loadWorkspace());
   const [currentTab, setCurrentTab] = useState<NavigationTab>(() => {
     const savedId = savedWorkspace.preferences.currentInvestigationId;
@@ -501,4 +502,12 @@ export default function App() {
       />
     </div>
   );
+}
+
+export default function App() {
+  if (window.location.pathname === '/') {
+    return <LandingPage />;
+  }
+
+  return <DashboardApp />;
 }
