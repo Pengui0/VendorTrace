@@ -35,14 +35,13 @@ export function LandingPage() {
       <main>
         <section className="relative mx-auto grid max-w-[1200px] items-center gap-12 px-5 pb-16 pt-14 sm:px-8 md:pt-20 lg:grid-cols-[1.06fr_0.94fr] lg:gap-16 lg:pb-24 lg:pt-20">
           <div className="relative z-10 max-w-[650px]">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#DCE4ED] bg-white/90 px-3 py-1.5 text-xs font-bold text-[#365672] shadow-sm">
-              <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#4FAE91] opacity-40" /><span className="relative inline-flex h-2 w-2 rounded-full bg-[#4FAE91]" /></span>
-              Evidence-backed procurement intelligence
-            </div>
-            <h1 className="mt-7 max-w-[610px] text-[46px] font-bold leading-[0.98] tracking-[-0.055em] text-[#172033] sm:text-[62px] lg:text-[72px]">
+            <h1 className="max-w-[610px] text-[46px] font-bold leading-[0.98] tracking-[-0.055em] text-[#172033] sm:text-[62px] lg:text-[72px]">
               Know who you are <span className="text-[#347C67]">really doing business with.</span>
             </h1>
             <p className="mt-7 max-w-[560px] text-lg leading-8 text-[#637188] sm:text-xl">VendorTrace turns fragmented corporate, regulatory, legal, and adverse-media signals into clear, explainable vendor intelligence.</p>
+            <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 border-l-2 border-[#A7E2D1] pl-4 text-xs font-semibold tracking-wide text-[#526176]">
+              <span>Verified public records</span><span>Traceable evidence</span><span>Human reviewed</span>
+            </div>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
               <button type="button" onClick={openDashboard} className="group inline-flex h-14 items-center justify-center gap-3 rounded-xl bg-[#17324D] px-6 text-base font-bold text-white shadow-[0_14px_36px_rgba(23,50,77,0.22)] transition duration-300 hover:-translate-y-1 hover:bg-[#204766] hover:shadow-[0_18px_44px_rgba(23,50,77,0.28)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#9BD8C6]">
                 Open the dashboard <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
@@ -70,7 +69,6 @@ export function LandingPage() {
                 </div>
               </div>
             </div>
-            <div className="absolute -bottom-5 -left-3 rounded-2xl border border-[#DEE5EF] bg-white px-4 py-3 shadow-lg sm:-left-8"><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#93A0AF]">Identity match</p><p className="mt-1 flex items-center gap-2 text-sm font-bold text-[#26364A]"><Check className="h-4 w-4 text-[#347C67]" /> CIN · GSTIN · registered office</p></div>
           </div>
         </section>
 
